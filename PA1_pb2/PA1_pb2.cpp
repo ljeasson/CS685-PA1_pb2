@@ -1,20 +1,22 @@
-#include <opencv2/core/core.hpp>
-#include <opencv2/highgui/highgui.hpp>
-#include <opencv2/imgproc.hpp>
+//#include <opencv2/core/core.hpp>
+//#include <opencv2/highgui/highgui.hpp>
+//#include <opencv2/imgproc.hpp>
 #include <iostream>
+#include <cmath>
+#include <cstdlib>
+#include <cstring>
 
 #include "ReadImage.cpp"
 #include "WriteImage.cpp"
 
 #define pi 3.141592653589793
 
-using namespace cv;
+//using namespace cv;
 using namespace std;
 
 void generate_gaussian_kernel_2D(float** kernel, double sigma, int kernel_size);
 void padd_with_zeros_2D(int** matrix, int** padded_matrix, int width, int height, int filter_size);
 void apply_sobel(int** image, int x_size, int y_size, int kernel[3][3], int kernel_size, int** output_image);
-
 
 void generate_gaussian_kernel_2D(float** kernel, double sigma, int kernel_size)
 {
@@ -175,8 +177,17 @@ void apply_sobel(int** image, int x_size, int y_size, int kernel_x[3][3], int ke
     }
 }
 
-int main()
-{
+int main(int argc, char** argv)
+{  
+    const char* file = NULL;
+    int threshold = 100;
+    
+    file = argv[1];
+    threshold = atoi(argv[2]);
+
+    cout << "filename: " << file << endl;
+    cout << "threshold: " << threshold << endl << endl;
+
     int sobel_X[3][3] =
     {
         {-1,0,1},
@@ -193,39 +204,24 @@ int main()
     // lenna.pgm
     int **lenna_input, **input_padded, **lenna_gx, **lenna_gy, **lenna_mag, **lenna;
     int x_size, y_size, Q;
-    char name[20] = "lenna.pgm";
-    char outfile_gx[20] = "lenna_gx.pgm";
-    char outfile_gy[20] = "lenna_gy.pgm";
-    char outfile_mag[20] = "lenna_mag.pgm";
-    char outfile[20] = "lenna_final.pgm";
+    
+    char name[20];
+    strncpy(name, file, sizeof(name) - 1);
+    
+    //char name[20] = "lenna.pgm";
+    char outfile_gx[20] = "gx.pgm";
+    char outfile_gy[20] = "gy.pgm";
+    char outfile_mag[20] = "mag.pgm";
+    char outfile[20] = "final.pgm";
     const int mask_size = 3;
 
     ReadImage(name, &lenna_input, x_size, y_size, Q);
-
-    // Original Image
-    cout << "Original Image" << endl;
-    for (int i = 0; i < 10; i++) {
-        for (int j = 0; j < 10; j++) {
-            cout << lenna_input[i][j] << "\t";
-        }
-        cout << endl;
-    }
-    cout << endl;
 
     // Pad image with zeros
     input_padded = new int* [y_size + mask_size - 1];
     for (int i = 0; i < y_size + mask_size - 1; i++)
         input_padded[i] = new int[x_size + mask_size - 1];
     padd_with_zeros_2D(lenna_input, input_padded, x_size, y_size, mask_size);
-
-    cout << "Padded Image" << endl;
-    for (int i = 0; i < 10; i++) {
-        for (int j = 0; j < 10; j++) {
-            cout << input_padded[i][j] << "\t";
-        }
-        cout << endl;
-    }
-    cout << endl;
 
     // Perform sobel filtering
     lenna_gx = new int* [y_size];
@@ -249,13 +245,39 @@ int main()
         }
     }
 
-    apply_sobel(input_padded, x_size, y_size, sobel_X, sobel_y, 3, lenna_gx, lenna_gy, lenna_mag, lenna, 100);
+    apply_sobel(input_padded, x_size, y_size, sobel_X, sobel_y, 3, lenna_gx, lenna_gy, lenna_mag, lenna, threshold);
     
     WriteImage(outfile_gx, lenna_gx, x_size, y_size, Q);
-    WriteImage(outfile_gy, lenna_gy, x_size, y_size, Q);
-    WriteImage(outfile_mag, lenna_mag, x_size, y_size, Q);
-    WriteImage(outfile, lenna, x_size, y_size, Q);
+    cout << "Sobel X image save as " << outfile_gx << endl;
 
+    WriteImage(outfile_gy, lenna_gy, x_size, y_size, Q);
+    cout << "Sobel Y image save as " << outfile_gy << endl;
+
+    WriteImage(outfile_mag, lenna_mag, x_size, y_size, Q);
+    cout << "Magnitude image save as " << outfile_mag << endl;
+
+    WriteImage(outfile, lenna, x_size, y_size, Q);
+    cout << "DONE - " << name << " saved as " << outfile << endl;
+
+    /*
+     // Original Image
+    cout << "Original Image" << endl;
+    for (int i = 0; i < 10; i++) {
+        for (int j = 0; j < 10; j++) {
+            cout << lenna_input[i][j] << "\t";
+        }
+        cout << endl;
+    }
+    cout << endl;
+
+    cout << "Padded Image" << endl;
+    for (int i = 0; i < 10; i++) {
+        for (int j = 0; j < 10; j++) {
+            cout << input_padded[i][j] << "\t";
+        }
+        cout << endl;
+    }
+    cout << endl;
 
     // Image after Sobel X
     cout << "Sobel X Image" << endl;
@@ -296,8 +318,8 @@ int main()
         cout << endl;
     }
     cout << endl;
+    */
+   
 
-
-    waitKey(0);
     return 0;
 }
